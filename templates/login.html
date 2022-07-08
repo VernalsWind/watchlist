@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Login</title>
+  <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type="text/css">
+  <link rel="icon" href="{{url_for('static', filename='avatar.png')}}">
+</head>
+
+<body>
+  {% for message in get_flashed_messages() %}
+  <div class="alert">{{ message }}</div>
+  {% endfor %}
+  <form method="post">
+    Username<br>
+    <input type="text" name="username" required><br><br>
+    Password<br>
+    <!-- 密码输入框的 type 属性使用 password，会将输入值显示为圆点 -->
+    <input type="password" name="password" required><br><br>
+    <input class="btn" type="submit" name="submit" value="Submit">
+  </form>
+</body>
+
+</html>

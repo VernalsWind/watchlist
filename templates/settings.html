@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Login</title>
+  <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type="text/css">
+  <link rel="icon" href="{{url_for('static', filename='avatar.png')}}">
+</head>
+
+<body>
+  {% for message in get_flashed_messages() %}
+  <div class="alert">{{ message }}</div>
+  {% endfor %}
+  <h3>Settings
+    <img src="{{url_for('static',filename='avatar.png')}}" class="avatar" alt="avatar">
+  </h3>
+  <form method="post">
+    Your Name <input type="text" name="name" autocomplete="off" required value="{{ current_user.name }}">
+    <input class="btn" type="submit" name="submit" value="Save">
+  </form>
+
+</body>
+
+</html>

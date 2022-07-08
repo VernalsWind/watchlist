@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>{{name }}'s Watchlist</title>
+  <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type="text/css">
+  <link rel="icon" href="{{url_for('static', filename='avatar.png')}}">
+</head>
+
+<body>
+  {% for message in get_flashed_messages() %}
+  <div class="alert">{{ message }}</div>
+  {% endfor %}
+  <h2>
+    <img src="{{url_for('static',filename='avatar.png')}}" class="avatar" alt="avatar">
+
+    {{ name }}'s Watchlist
+
+    <span class="float-right">
+      <a class="imdb" href="{{url_for('index')}}" target="_blank" title="index">主页</a>
+    </span>
+  </h2>
+  <img src="{{url_for('static',filename='totoro.gif')}}" class="totoro" alt="totoro">
+  {# 使用 length 过滤器获取 movies 变量的长度 #}
+  <p>{{ movies|length }} Titles</p>
+  <form method="post">
+    Name <input type="text" name="title" autocomplete="off" required>
+    Year <input type="text" name="year" autocomplete="off" required>
+    <input class="btn" type="submit" name="submit" value="Add">
+  </form>
+  <ul class="movie-list">
+    {% for movie in movies %} {# 迭代 movies 变量 #}
+    <li>{{ movie.title }} - {{ movie.year }}
+      <span class="float-right">
+        <a class="imdb" href="https://www.imdb.com/find?q={{ movie.title }}" target="_blank"
+          title="Find this movie on IMDb">IMDb</a>
+      </span>
+      <span class="float-right">
+        <a class="btn" href="{{ url_for('edit', movie_id=movie.id) }}">Edit</a>
+      </span>
+
+      <span class="float-right">
+
+        <form class="inline-form" method="post" action="{{ url_for('delete', movie_id=movie.id) }}">
+          <input class="btn" type="submit" name="delete" value="Delete" onclick="return confirm('Are you sure?')">
+        </form>
+
+      </span>
+
+    </li>
+    {% endfor %}
+  </ul>
+  <footer>
+    <small>&copy; 2018 <a href="http://helloflask.com/tutorial">HelloFlask</a></small>
+  </footer>
+</body>
+
+</html>

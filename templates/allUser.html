@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>
+    所有用户
+  </title>
+  <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type="text/css">
+  <link rel="icon" href="{{url_for('static', filename='avatar.png')}}">
+</head>
+
+<body>
+  {% for message in get_flashed_messages() %}
+  <div class="alert">{{ message }}</div>
+  {% endfor %}
+  <h2>
+    <img src="{{url_for('static',filename='avatar.png')}}" class="avatar" alt="avatar">
+
+    {{ name }}'s Watchlist
+
+    <span class="float-right">
+      <a class="imdb" href="{{url_for('index')}}" target="_blank" title="index">主页</a>
+    </span>
+  </h2>
+  <img src="{{url_for('static',filename='totoro.gif')}}" class="totoro" alt="totoro">
+  {# 使用 length 过滤器获取 movies 变量的长度 #}
+  <p>{{ name|length }} Users</p>
+
+  <ul class="movie-list">
+    {% for n in name %}
+    <li>{{ n }} <span class="float-right">
+        <a class="imdb" href="{{url_for('selflist',username=n)}}">个人主页</a>
+      </span>
+      <span class="float-right">
+        <form class="inline-form" method="post" action="{{ url_for('deleteuser', user_name=n) }}">
+          <input class="btn" type="submit" name="delete" value="Delete" onclick="return confirm('Are you sure?')">
+        </form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  <footer>
+    <small>&copy; 2018 <a href="http://helloflask.com/tutorial">HelloFlask</a></small>
+  </footer>
+</body>
+
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>All Movielist</title>
+  <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type="text/css">
+  <link rel="icon" href="{{url_for('static', filename='avatar.png')}}">
+</head>
+
+<body>
+  {% for message in get_flashed_messages() %}
+  <div class="alert">{{ message }}</div>
+  {% endfor %}
+  <h2>
+    <img src="{{url_for('static',filename='avatar.png')}}" class="avatar" alt="avatar">
+
+    All Movielist
+    <span class="float-right">
+      {% if current_user.is_authenticated %}
+      <a class="imdb1" href="{{ url_for('settings') }}">Settings</a>
+      <a class="imdb1" href="{{ url_for('selflist',username=current_user.username) }}">SelfList</a>
+
+      <a class="imdb1" href="{{ url_for('allUser') }}">All User</a>
+      <a class="imdb1" href="{{ url_for('logout') }}">Logout</a>
+      {% else %}
+      <a class="imdb1" href="{{ url_for('login') }}">Login</a>
+      <a class="imdb1" href="{{ url_for('register') }}">Register</a>
+      {% endif %}
+    </span>
+  </h2>
+  <img src="{{url_for('static',filename='totoro.gif')}}" class="totoro" alt="totoro">
+  {# 使用 length 过滤器获取 movies 变量的长度 #}
+  <p>{{ movies|length }} Titles</p>
+  {% if current_user.is_authenticated %}
+  <form method="post">
+    Name <input type="text" name="title" autocomplete="off" required>
+    Year <input type="text" name="year" autocomplete="off" required>
+    <input class="btn" type="submit" name="submit" value="Add">
+  </form>
+  {% endif %}
+  <ul class="movie-list">
+    {% for movie in movies %}
+    <li>{{ movie.title }} - {{ movie.year }}
+      {% if current_user.is_authenticated %}
+      <span class="float-right">
+        <a class="btn" href="{{ url_for('edit', movie_id=movie.id) }}">Edit</a>
+      </span>
+
+      <span class="float-right">
+
+        <form class="inline-form" method="post" action="{{ url_for('delete', movie_id=movie.id) }}">
+          <input class="btn" type="submit" name="delete" value="Delete" onclick="return confirm('Are you sure?')">
+        </form>
+
+      </span>
+      {% endif %}
+      <span class="float-right">
+        <a class="imdb" href="https://www.imdb.com/find?q={{ movie.title }}" target="_blank"
+          title="Find this movie on IMDb">IMDb</a>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <footer>
+    <small>&copy; 2022 <a href="http://helloflask.com/tutorial">HelloFlask</a><a
+        href="https://vernalswind.github.io/">蒙蔚主页</a></small>
+  </footer>
+</body>
+
+</html>
