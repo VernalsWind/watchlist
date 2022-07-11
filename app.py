@@ -8,16 +8,18 @@ from flask import Flask, render_template,request
 from flask import redirect,flash,url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
-
+from flask_admin import Admin,expose,BaseView
 from flask_login import login_required, logout_user,current_user
 from flask_login import UserMixin,login_user
 from flask_login import LoginManager
 from werkzeug.security import generate_password_hash, check_password_hash
 import click
+
+from flask_admin.contrib.sqla import ModelView
 app=Flask(__name__)
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
-app.config['SQLALCHEMY_DATABASE_URI'] = prefix + os.path.join(os.path.dirname(app.root_path), os.getenv('DATABASE_FILE', 'data.db'))
+
 login_manager = LoginManager(app)  # 实例化扩展类
 login_manager.login_view = 'login'
 
@@ -25,6 +27,10 @@ login_manager.login_view = 'login'
 def load_user(user_id):  # 创建用户加载回调函数，接受用户 ID 作为参数
     user = User.query.get(int(user_id))  # 用 ID 作为 User 模型的主键查询对应的用户
     return user  # 返回用户对象
+app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
+
+
+
 
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(app.root_path,'data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # 关闭对模型修改的监控
@@ -54,6 +60,20 @@ class Subscribe(db.Model):
   mid =db.Column(db.Integer)
 
 
+
+admin=Admin(app, name='后台管理界面', template_mode='bootstrap3')
+
+class myAdminView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated
+    def inaccessible_callback(self, name, **kwargs):
+        return url_for('admin')     
+
+
+admin.add_view(myAdminView(User, db.session))
+admin.add_view(myAdminView(Movie, db.session))
+admin.add_view(myAdminView(Subscribe, db.session))   
+#主页，是查询全部电影和增加电影
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':  # 判断是否是 POST 请求
@@ -70,16 +90,13 @@ def index():
         db.session.commit()  # 提交数据库会话
         flash('Item created.')  # 显示成功创建的提示
         return redirect(url_for('index'))  # 重定向回主页
-
-
     movies=Movie.query.all()
     return render_template('index.html',movies=movies)
 
-
+#所有用户的查询
 @app.route('/allUser')
 
 def allUser():
-    
     name=[]
     n=User.query.count()
     for i in range(1,n+1):
@@ -88,10 +105,7 @@ def allUser():
     
     return render_template('allUser.html',name=name)  
     
-        
-        
 
-    
 
 
 
@@ -122,7 +136,10 @@ def edit(movie_id):
 @login_required 
 def delete(movie_id):
     movie = Movie.query.get_or_404(movie_id)  # 获取电影记录
+    subscribe=Subscribe.query.filter(Subscribe.mid==movie_id).all()
+   
     db.session.delete(movie)  # 删除对应的记录
+   
     db.session.commit()  # 提交数据库会话
     flash('Item deleted.')
     return redirect(url_for('index'))  # 重定向回主页  
@@ -131,7 +148,10 @@ def delete(movie_id):
 @login_required
 def deleteuser(user_name):
     user=User.query.filter(User.username==user_name).first()
+    
+    subscribe=Subscribe.query.filter(Subscribe.uid==user.id).all()
     db.session.delete(user)
+   
     db.session.commit()
     flash('Item deleted.')
    
@@ -251,15 +271,20 @@ def login():
 
     return render_template('login.html')
 
+#个人主页
 @app.route('/login/<username>',methods=['GET', 'POST'])
+
 def selflist(username):
+    #根据传入的用户名进行搜索用户UID，进而搜索订阅SID，得到某用户的订阅电影列表
+    #查询功能
     user=User.query.filter_by(username=username).first()
     subscribe=Subscribe.query.filter(Subscribe.uid==user.id).all()
     countsub=Subscribe.query.filter(Subscribe.uid==user.id).count()
     movies=[]
     for i in range(countsub):
-        movies.append(Movie.query.filter( Movie.id==subscribe[i].mid).first())
-        
+        if Movie.query.filter(Movie.id==subscribe[i].mid).first():#一定记得判断！
+            movies.append(Movie.query.filter(Movie.id==subscribe[i].mid).first())
+       
     if request.method == 'POST':  # 判断是否是 POST 请求
         # 获取表单数据
         title = request.form.get('title')  # 传入表单对应输入字段的 name 值
@@ -269,34 +294,38 @@ def selflist(username):
             flash('Invalid input.')  # 显示错误提示
             return redirect(url_for('index'))  # 重定向回主页
         # 保存表单数据到数据库
+        user=User.query.filter_by(username=username).first()
         movie = Movie(title=title, year=year)  # 创建记录
-        
-        
         db.session.add(movie)  # 添加到数据库会话
+        db.session.commit() 
+
+        movie_current=Movie.query.filter(Movie.title==title).first()
+        subself=Subscribe(mid=movie_current.id,uid=user.id)
         
-        db.session.commit()  # 提交数据库会话
-        subscribe=Subscribe(uid=user.id,mid=movie.id)
-        db.session.add(subscribe)
-        db.session.commit()  # 提交数据库会话
+        
+        db.session.add(subself)#insert 功能，用户订阅电影
+        db.session.commit() 
         flash('Item created.')  # 显示成功创建的提示
+        #第二遍写，为了更新页面，是增加之后的再次查询，不是写错了
         user=User.query.filter_by(username=username).first()
         subscribe=Subscribe.query.filter(Subscribe.uid==user.id).all()
         countsub=Subscribe.query.filter(Subscribe.uid==user.id).count()
         movies=[]
         for i in range(countsub):
-            movies.append(Movie.query.filter( Movie.id==subscribe[i].mid).first())
+            if Movie.query.filter(Movie.id==subscribe[i].mid).first():
+                movies.append(Movie.query.filter(Movie.id==subscribe[i].mid).first())
         return render_template('selflist.html',name=user.username,movies=movies)
     return render_template('selflist.html',name=user.username,movies=movies)
 
-
+#登出
 @app.route('/logout')
-@login_required  # 用于视图保护，后面会详细介绍
+@login_required  # 用于视图保护
 def logout():
     logout_user()  # 登出用户
     flash('Goodbye.')
     return redirect(url_for('index'))  # 重定向回首页
 
-
+#设置可以改用户名
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -316,7 +345,13 @@ def settings():
         flash('Settings updated.')
         return redirect(url_for('index'))
 
-    return render_template('settings.html')    
+    return render_template('settings.html') 
+
+
+
+
+
+
 if __name__=='__main__':
   app.run()  
  
